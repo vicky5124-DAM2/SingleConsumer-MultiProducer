@@ -2,11 +2,7 @@ package org.example;
 
 public class Main {
     public static void main(String[] args) {
-        Consumer<String> consumer = new Consumer<>(new Chef());
-        Producer<String> producer = new Producer<>(consumer);
-
-        Thread consumerThread = new Thread(consumer);
-        consumerThread.start();
+        MultiProducerSingleConsumer<String> mpsc = new MultiProducerSingleConsumer<>(new Chef());
 
         for (int i = 0; i < 5; i++) {
             Runnable runnable = new Runnable() {
@@ -25,7 +21,7 @@ public class Main {
                     this.waiterId = waiterId;
                     return this;
                 }
-            }.init(producer.clone(), i);
+            }.init(mpsc.getProducer(), i);
 
             new Thread(runnable).start();
         }
@@ -36,14 +32,11 @@ public class Main {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            consumer.close();
+
+            mpsc.close();
         }).start();
 
-        try {
-            consumerThread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        mpsc.join();
     }
 }
 
@@ -51,7 +44,7 @@ class Chef implements ConsumerFunction<String> {
     @Override
     public void execute(String item) {
         try {
-            Thread.sleep(100);
+            Thread.sleep(200);
         } catch (InterruptedException e) {
             if (Thread.interrupted()) {
                 return;
